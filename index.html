@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexGen Mobile Hub - Investment Platform</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen" x-data="platformApp()">
+
+    <!-- ==================== AUTHENTICATION VIEW ==================== -->
+    <div x-show="!isAuthenticated" class="flex items-center justify-center min-h-screen px-4 bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950">
+        <div class="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-slate-800 p-8 rounded-2xl shadow-2xl">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-indigo-600/20 text-indigo-400 mb-4 text-2xl font-bold">
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                </div>
+                <h1 class="text-2xl font-extrabold tracking-tight text-white">NexGen Hub</h1>
+                <p class="text-sm text-slate-400 mt-1" x-text="isRegistering ? 'Create your investment account' : 'Sign in to access your dashboard'"></p>
+            </div>
+
+            <!-- Auth Form -->
+            <form @submit.prevent="handleAuth" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Email or Phone Number</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500"><i class="fa-solid fa-user"></i></span>
+                        <input type="text" x-model="authInput" required placeholder="e.g. user@email.com or 07XXXXXXXX" class="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Password</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500"><i class="fa-solid fa-lock"></i></span>
+                        <input type="password" x-model="authPassword" required placeholder="••••••••" class="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                </div>
+
+                <div x-show="isRegistering" class="text-xs text-indigo-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-info"></i> Your unique invitation code will be auto-generated upon registration.
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg text-sm shadow-lg shadow-indigo-600/30 transition transform active:scale-95">
+                    <span x-text="isRegistering ? 'Register Account' : 'Secure Login'"></span>
+                </button>
+            </form>
+
+            <div class="mt-6 text-center text-xs text-slate-400">
+                <span x-text="isRegistering ? 'Already have an account?' : 'Don\'t have an account?'"></span>
+                <button @click="isRegistering = !isRegistering" class="text-indigo-400 font-medium ml-1 hover:underline" x-text="isRegistering ? 'Log In' : 'Register Now'"></button>
+            </div>
+
+            <!-- Discrete Invisible Management Gateway Trigger -->
+            <div class="mt-8 pt-4 border-t border-slate-800/60 text-center">
+                <button @click="openAdminLoginModal" class="text-[10px] text-slate-600 hover:text-slate-400 tracking-widest uppercase transition">Management Portal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== ADMIN LOGIN MODAL (Invisible to regular users) ==================== -->
+    <div x-show="showAdminLoginModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm px-4" x-cloak>
+        <div class="w-full max-w-sm bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-rose-500"></i> Management Authentication
+                </h3>
+                <button @click="showAdminLoginModal = false" class="text-slate-400 hover:text-white text-xs"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <p class="text-xs text-slate-400">Enter management credentials to access the invisible control panel.</p>
+            <form @submit.prevent="handleAdminLogin" class="space-y-3">
+                <div>
+                    <label class="block text-[11px] text-slate-400 mb-1">Management Email</label>
+                    <input type="email" x-model="adminEmailInput" required placeholder="admin@nexgen.com" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-[11px] text-slate-400 mb-1">Management Password</label>
+                    <input type="password" x-model="adminPasswordInput" required placeholder="••••••••" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white">
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg transition">Access Management Panel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN DASHBOARD & PLATFORM VIEW ==================== -->
+    <div x-show="isAuthenticated && !showAdminPortal" class="pb-24">
+        <!-- Top Header Navigation Bar -->
+        <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-bold text-white leading-tight">NexGen Hub</h2>
+                    <span class="text-[10px] text-emerald-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Active Connection</span>
+                </div>
+            </div>
+            <!-- Live Ticker Feed Preview -->
+            <div class="hidden md:flex items-center bg-slate-800/60 border border-slate-700/50 px-3 py-1 rounded-full text-xs text-slate-300 max-w-xs truncate">
+                <i class="fa-solid fa-bullhorn text-indigo-400 mr-2"></i>
+                <span x-text="liveTickerMessage"></span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button @click="logout" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg text-slate-300 border border-slate-700 transition">
+                    <i class="fa-solid fa-power-off mr-1"></i> Exit
+                </button>
+            </div>
+        </header>
+
+        <!-- Dynamic Main Content Tabs -->
+        <main class="max-w-4xl mx-auto px-4 py-6">
+            
+            <!-- TAB 1: DASHBOARD / HOME -->
+            <div x-show="currentTab === 'home'" class="space-y-6" x-cloak>
+                <!-- Wallet Balance Card -->
+                <div class="bg-gradient-to-br from-indigo-900/60 via-slate-900 to-slate-900 border border-indigo-500/30 p-6 rounded-2xl shadow-xl relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs text-indigo-300 font-medium uppercase tracking-wider">Total Available Balance</p>
+                            <h3 class="text-3xl font-black text-white mt-1">KES <span x-text="balance.toLocaleString()"></span></h3>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="currentTab = 'recharge'" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-emerald-600/20 transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-wallet"></i> Recharge
+                            </button>
+                            <button @click="currentTab = 'withdraw'" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-xs font-bold rounded-lg transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-money-bill-transfer"></i> Withdraw
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-800/80 grid grid-cols-2 gap-4 text-xs">
+                        <div>
+                            <span class="text-slate-400 block">Total Invested Capital</span>
+                            <span class="text-white font-bold text-sm">KES <span x-text="totalInvested.toLocaleString()"></span></span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block">Total Accumulated Earnings</span>
+                            <span class="text-emerald-400 font-bold text-sm">KES <span x-text="totalEarnings.toLocaleString()"></span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Stream Ticker Box (Mobile friendly) -->
+                <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center gap-3 text-xs">
+                    <div class="bg-indigo-600/20 text-indigo-400 p-2 rounded-lg"><i class="fa-solid fa-satellite-dish"></i></div>
+                    <div class="overflow-hidden whitespace-nowrap">
+                        <p class="text-slate-300 animate-pulse" x-text="liveTickerMessage"></p>
+                    </div>
+                </div>
+
+                <!-- Products Showcase Section -->
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-mobile text-indigo-400"></i> Flagship Smartphone Investments
+                        </h3>
+                        <span class="text-xs text-slate-400">365-Day Cycle • 11% Daily ROI</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <template x-for="product in products" :key="product.id">
+                            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between transition hover:border-slate-700">
+                                <div>
+                                    <!-- Image viewer toggle (Front / Back) -->
+                                    <div class="relative h-48 bg-slate-950 p-4 flex items-center justify-center overflow-hidden group">
+                                        <img :src="product.showBack ? product.backImage : product.frontImage" :alt="product.name" class="h-full object-contain transition duration-300 transform group-hover:scale-105">
+                                        <div class="absolute top-2 right-2 bg-slate-900/80 backdrop-blur border border-slate-700 px-2 py-1 rounded text-[10px] text-slate-300 font-medium">
+                                            <span x-text="product.showBack ? 'Back View' : 'Front View'"></span>
+                                        </div>
+                                        <button @click="product.showBack = !product.showBack" class="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-indigo-600/90 hover:bg-indigo-600 text-white text-[10px] px-3 py-1 rounded-full shadow transition">
+                                            <i class="fa-solid fa-rotate mr-1"></i> Flip View
+                                        </button>
+                                    </div>
+                                    <!-- Product Info -->
+                                    <div class="p-4">
+                                        <h4 class="font-bold text-white text-base" x-text="product.name"></h4>
+                                        <p class="text-xs text-slate-400 mt-1" x-text="product.description"></p>
+                                        
+                                        <div class="mt-4 space-y-2 text-xs">
+                                            <div class="flex justify-between py-1 border-b border-slate-800">
+                                                <span class="text-slate-400">Price:</span>
+                                                <span class="font-bold text-indigo-400">KES <span x-text="product.price.toLocaleString()"></span></span>
+                                            </div>
+                                            <div class="flex justify-between py-1 border-b border-slate-800">
+                                                <span class="text-slate-400">Daily Return:</span>
+                                                <span class="font-bold text-emerald-400">11% (KES <span x-text="(product.price * 0.11).toFixed(0)"></span>)</span>
+                                            </div>
+                                            <div class="flex justify-between py-1">
+                                                <span class="text-slate-400">Cycle Duration:</span>
+                                                <span class="text-slate-200">365 Days</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-4 pt-0">
+                                    <button @click="purchaseProduct(product)" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow transition">
+                                        Purchase Device
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: RECHARGE ACCOUNT -->
+            <div x-show="currentTab === 'recharge'" class="space-y-6 max-w-lg mx-auto" x-cloak>
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+                    <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-wallet text-emerald-400"></i> Account Recharge Portal
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-6">Deposit funds instantly to your account wallet. Automatic top-ups reflect within 10 seconds.</p>
+
+                    <div class="bg-slate-800/60 border border-slate-700/60 p-4 rounded-xl mb-6 space-y-2">
+                        <div class="text-xs text-slate-300 font-medium">Designated Account Number:</div>
+                        <div class="text-xl font-mono font-bold text-emerald-400 tracking-wider">0737047849</div>
+                        <p class="text-[10px] text-slate-400">Send your payment directly to the number above, then submit your transaction details below.</p>
+                    </div>
+
+                    <form @submit.prevent="submitRecharge" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Recharge Amount (KES)</label>
+                            <input type="number" x-model.number="rechargeAmount" min="100" required placeholder="e.g. 2000" class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Transaction Reference / Phone used</label>
+                            <input type="text" x-model="rechargeRef" required placeholder="e.g. MPESA Confirmation Code" class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+
+                        <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg text-sm shadow-lg shadow-emerald-600/30 transition">
+                            Confirm & Deposit (Auto-reflects in 10s)
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Recharge History -->
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+                    <h4 class="font-bold text-white text-sm mb-4">Recharge History</h4>
+                    <div class="space-y-2">
+                        <template x-for="item in rechargeHistory" :key="item.id">
+                            <div class="flex justify-between items-center p-3 bg-slate-800/40 rounded-xl text-xs border border-slate-700/50">
+                                <div>
+                                    <div class="font-bold text-white">KES <span x-text="item.amount.toLocaleString()"></span></div>
+                                    <div class="text-[10px] text-slate-400" x-text="item.ref + ' • ' + item.date"></div>
+                                </div>
+                                <span class="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded text-[10px] font-semibold" x-text="item.status"></span>
+                            </div>
+                        </template>
+                        <div x-show="rechargeHistory.length === 0" class="text-xs text-slate-500 text-center py-4">No recharge records found.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: WITHDRAW ACCOUNT -->
+            <div x-show="currentTab === 'withdraw'" class="space-y-6 max-w-lg mx-auto" x-cloak>
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+                    <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-money-bill-transfer text-indigo-400"></i> Request Withdrawal
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-6">Minimum withdrawal amount is <strong class="text-white">KES 600</strong>. Management verifies all requests before payout.</p>
+
+                    <div class="bg-slate-800/60 p-4 rounded-xl mb-6 flex justify-between items-center text-xs">
+                        <span class="text-slate-400">Withdrawable Balance:</span>
+                        <span class="font-bold text-white text-sm">KES <span x-text="balance.toLocaleString()"></span></span>
+                    </div>
+
+                    <form @submit.prevent="submitWithdraw" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Amount to Withdraw (KES)</label>
+                            <input type="number" x-model.number="withdrawAmount" min="600" required placeholder="Minimum 600" class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Payout Destination (Phone / Bank Account)</label>
+                            <input type="text" x-model="withdrawDestination" required placeholder="e.g. 07XXXXXXXX" class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+
+                        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg text-sm shadow-lg shadow-indigo-600/30 transition">
+                            Submit Withdrawal Request
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Withdraw History -->
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+                    <h4 class="font-bold text-white text-sm mb-4">Withdrawal History</h4>
+                    <div class="space-y-2">
+                        <template x-for="item in withdrawHistory" :key="item.id">
+                            <div class="flex justify-between items-center p-3 bg-slate-800/40 rounded-xl text-xs border border-slate-700/50">
+                                <div>
+                                    <div class="font-bold text-white">KES <span x-text="item.amount.toLocaleString()"></span></div>
+                                    <div class="text-[10px] text-slate-400" x-text="item.destination + ' • ' + item.date"></div>
+                                </div>
+                                <span class="px-2 py-1 rounded text-[10px] font-semibold" 
+                                      :class="{
+                                          'bg-amber-500/10 text-amber-400': item.status === 'Pending Verification',
+                                          'bg-emerald-500/10 text-emerald-400': item.status === 'Approved',
+                                          'bg-rose-500/10 text-rose-400': item.status === 'Rejected'
+                                      }" 
+                                      x-text="item.status"></span>
+                            </div>
+                        </template>
+                        <div x-show="withdrawHistory.length === 0" class="text-xs text-slate-500 text-center py-4">No withdrawal records found.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: MY INVESTMENTS (Click & Earn Engine) -->
+            <div x-show="currentTab === 'investments'" class="space-y-6" x-cloak>
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+                    <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-indigo-400"></i> Active Device Cycles & Daily Earnings
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-6">You can purchase multiple products concurrently. Click once per day exactly at or after your purchase timestamp to collect daily income.</p>
+
+                    <div class="space-y-4">
+                        <template x-for="inv in userInvestments" :key="inv.id">
+                            <div class="bg-slate-800/50 border border-slate-700/60 p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                <div class="flex items-center gap-4">
+                                    <img :src="inv.frontImage" class="w-16 h-16 object-contain bg-slate-900 p-1 rounded-lg border border-slate-700">
+                                    <div>
+                                        <h4 class="font-bold text-white text-sm" x-text="inv.name"></h4>
+                                        <p class="text-[11px] text-indigo-400 mt-0.5">Purchased at: <span x-text="inv.purchaseTimeStr"></span></p>
+                                        <p class="text-[11px] text-slate-400">Daily ROI: KES <span x-text="inv.dailyEarn.toFixed(0)"></span> • Remaining Days: <span x-text="inv.daysLeft"></span>/365</p>
+                                    </div>
+                                </div>
+                                <div class="w-full md:w-auto flex flex-col items-end gap-2">
+                                    <button @click="claimDailyEarn(inv)" 
+                                            :disabled="!inv.canClick"
+                                            class="w-full md:w-auto px-5 py-2.5 rounded-lg text-xs font-bold transition shadow"
+                                            :class="inv.canClick ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20' : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'"
+                                            x-text="inv.canClick ? 'Click & Earn Today\'s ROI' : inv.statusText">
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                        <div x-show="userInvestments.length === 0" class="text-center py-12 text-slate-500 text-xs">
+                            <i class="fa-solid fa-box-open text-3xl mb-2"></i>
+                            <p>You have no active device investments. Head to the dashboard to purchase products.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: TEAM & INVITATION -->
+            <div x-show="currentTab === 'team'" class="space-y-6" x-cloak>
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+                    <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-users text-indigo-400"></i> Team Profile & Invitation Hub
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-6">Invite your friends and grow your investment network to earn referral bonuses.</p>
+
+                    <div class="bg-indigo-950/40 border border-indigo-500/30 p-4 rounded-xl mb-6">
+                        <label class="block text-xs font-medium text-indigo-300 mb-1">Your Unique Invitation Code</label>
+                        <div class="flex items-center gap-2">
+                            <input type="text" readonly x-model="myInvitationCode" class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm font-mono font-bold text-white">
+                            <button @click="copyInvitationCode" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition">
+                                Copy
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                        <div class="bg-slate-800/40 border border-slate-700/50 p-4 rounded-xl">
+                            <span class="text-xs text-slate-400 block">Total Team Members</span>
+                            <span class="text-xl font-bold text-white mt-1 block" x-text="teamMembersCount"></span>
+                        </div>
+                        <div class="bg-slate-800/40 border border-slate-700/50 p-4 rounded-xl">
+                            <span class="text-xs text-slate-400 block">Team Active Recharges</span>
+                            <span class="text-xl font-bold text-emerald-400 mt-1 block">KES <span x-text="teamRecharges.toLocaleString()"></span></span>
+                        </div>
+                        <div class="bg-slate-800/40 border border-slate-700/50 p-4 rounded-xl">
+                            <span class="text-xs text-slate-400 block">Team Commission Earned</span>
+                            <span class="text-xl font-bold text-indigo-400 mt-1 block">KES <span x-text="teamCommission.toLocaleString()"></span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Bottom Navigation Bar -->
+        <nav class="fixed bottom-0 inset-x-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-40 py-2 px-4">
+            <div class="max-w-md mx-auto flex justify-around items-center">
+                <button @click="currentTab = 'home'" :class="currentTab === 'home' ? 'text-indigo-400' : 'text-slate-400 hover:text-slate-200'" class="flex flex-col items-center gap-1 text-[10px] transition">
+                    <i class="fa-solid fa-house text-lg"></i> Home
+                </button>
+                <button @click="currentTab = 'recharge'" :class="currentTab === 'recharge' ? 'text-indigo-400' : 'text-slate-400 hover:text-slate-200'" class="flex flex-col items-center gap-1 text-[10px] transition">
+                    <i class="fa-solid fa-wallet text-lg"></i> Recharge
+                </button>
+                <button @click="currentTab = 'investments'" :class="currentTab === 'investments' ? 'text-indigo-400' : 'text-slate-400 hover:text-slate-200'" class="flex flex-col items-center gap-1 text-[10px] transition">
+                    <i class="fa-solid fa-layer-group text-lg"></i> My Devices
+                </button>
+                <button @click="currentTab = 'team'" :class="currentTab === 'team' ? 'text-indigo-400' : 'text-slate-400 hover:text-slate-200'" class="flex flex-col items-center gap-1 text-[10px] transition">
+                    <i class="fa-solid fa-users text-lg"></i> Team
+                </button>
+                <button @click="currentTab = 'withdraw'" :class="currentTab === 'withdraw' ? 'text-indigo-400' : 'text-slate-400 hover:text-slate-200'" class="flex flex-col items-center gap-1 text-[10px] transition">
+                    <i class="fa-solid fa-money-bill-transfer text-lg"></i> Withdraw
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <!-- ==================== INVISIBLE MANAGEMENT PORTAL (ADMIN) ==================== -->
+    <div x-show="showAdminPortal" class="min-h-screen bg-slate-950 p-4 md:p-8" x-cloak>
+        <div class="max-w-6xl mx-auto space-y-6">
+            <div class="flex justify-between items-center bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+                <div>
+                    <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-rose-500"></i> Management Control Panel
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Invisible administrative backend for user verification, device audits, and inventory management.</p>
+                </div>
+                <button @click="showAdminPortal = false" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs rounded-xl font-bold transition">
+                    <i class="fa-solid fa-arrow-left mr-1"></i> Return to Platform
+                </button>
+            </div>
+
+            <!-- Admin Overview Metrics -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                    <span class="text-xs text-slate-400 block">Total Registered Members</span>
+                    <span class="text-2xl font-bold text-white mt-1 block" x-text="adminMembers.length"></span>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                    <span class="text-xs text-slate-400 block">Pending Withdrawals</span>
+                    <span class="text-2xl font-bold text-amber-400 mt-1 block" x-text="pendingWithdrawalsCount"></span>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                    <span class="text-xs text-slate-400 block">Active Platform Recharges</span>
+                    <span class="text-2xl font-bold text-emerald-400 mt-1 block">KES <span x-text="totalPlatformRecharges.toLocaleString()"></span></span>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                    <span class="text-xs text-slate-400 block">Active Products in Catalog</span>
+                    <span class="text-2xl font-bold text-indigo-400 mt-1 block" x-text="products.length"></span>
+                </div>
+            </div>
+
+            <!-- Management Section 1: Verify Withdrawals & View User Products -->
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-4">
+                <h3 class="text-base font-bold text-white">Withdrawal Verification & User Audits</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-800/60 text-slate-400 uppercase">
+                            <tr>
+                                <th class="p-3 rounded-l-lg">User</th>
+                                <th class="p-3">Amount</th>
+                                <th class="p-3">Destination</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3 rounded-r-lg">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            <template x-for="req in allWithdrawalRequests" :key="req.id">
+                                <tr>
+                                    <td class="p-3 font-medium text-white" x-text="req.user"></td>
+                                    <td class="p-3 text-indigo-400 font-bold">KES <span x-text="req.amount.toLocaleString()"></span></td>
+                                    <td class="p-3 text-slate-300" x-text="req.destination"></td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-0.5 rounded font-semibold text-[10px]"
+                                              :class="req.status === 'Pending Verification' ? 'bg-amber-500/10 text-amber-400' : (req.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400')"
+                                              x-text="req.status"></span>
+                                    </td>
+                                    <td class="p-3 space-x-2">
+                                        <button @click="approveWithdraw(req)" x-show="req.status === 'Pending Verification'" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold">Approve</button>
+                                        <button @click="rejectWithdraw(req)" x-show="req.status === 'Pending Verification'" class="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded font-bold">Reject</button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Management Section 2: Add New Products -->
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-4">
+                <h3 class="text-base font-bold text-white">Add New Smartphone Product</h3>
+                <form @submit.prevent="addNewProduct" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Product Name</label>
+                        <input type="text" x-model="newProd.name" required placeholder="e.g. Quantum X Fold Pro" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Price (KES)</label>
+                        <input type="number" x-model.number="newProd.price" required placeholder="5000" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Front Image URL</label>
+                        <input type="text" x-model="newProd.frontImage" required placeholder="https://..." class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Back Image URL</label>
+                        <input type="text" x-model="newProd.backImage" required placeholder="https://..." class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-slate-400 mb-1">Description</label>
+                        <input type="text" x-model="newProd.description" required placeholder="Latest flagship smartphone..." class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white">
+                    </div>
+                    <div class="md:col-span-2">
+                        <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg">Add Product to Catalog</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Management Section 3: All Members Status -->
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-4">
+                <h3 class="text-base font-bold text-white">All Members Status & Purchased Products Audit</h3>
+                <div class="space-y-3">
+                    <template x-for="member in adminMembers" :key="member.id">
+                        <div class="p-4 bg-slate-800/40 border border-slate-700/50 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs">
+                            <div>
+                                <div class="font-bold text-white text-sm" x-text="member.emailOrPhone"></div>
+                                <div class="text-slate-400 mt-0.5">Balance: <span class="text-emerald-400 font-bold">KES <span x-text="member.balance.toLocaleString()"></span></span> • Invite Code: <span class="text-indigo-400" x-text="member.inviteCode"></span></div>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block mb-1">Purchased Products:</span>
+                                <div class="flex gap-2 flex-wrap">
+                                    <template x-for="pName in member.purchasedProducts">
+                                        <span class="px-2 py-0.5 bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 rounded text-[10px]" x-text="pName"></span>
+                                    </template>
+                                    <span x-show="member.purchasedProducts.length === 0" class="text-slate-500 italic">No devices purchased yet</span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        function platformApp() {
+            return {
+                isAuthenticated: false,
+                isRegistering: false,
+                authInput: '',
+                authPassword: '',
+                currentTab: 'home',
+                showAdminPortal: false,
+                showAdminLoginModal: false,
+                
+                // Management Login Credentials
+                adminEmailInput: '',
+                adminPasswordInput: '',
+                correctAdminEmail: 'admin@nexgen.com',
+                correctAdminPassword: 'AdminSecurePassword2026!',
+                
+                balance: 0,
+                totalInvested: 0,
+                totalEarnings: 0,
+                
+                myInvitationCode: 'NEXGEN' + Math.floor(100000 + Math.random() * 900000),
+                teamMembersCount: 14,
+                teamRecharges: 48500,
+                teamCommission: 4850,
+
+                rechargeAmount: '',
+                rechargeRef: '',
+                withdrawAmount: '',
+                withdrawDestination: '',
+
+                liveTickerMessage: 'User 0725***891 successfully withdrew KES 3,400 5 mins ago',
+
+                rechargeHistory: [],
+                withdrawHistory: [],
+                userInvestments: [],
+
+                // 3 Initial Flagship Products with Front & Back images
+                products: [
+                    {
+                        id: 1,
+                        name: 'Apex Horizon Ultra 5G',
+                        price: 1300,
+                        dailyEarn: 1300 * 0.11,
+                        cycles: 365,
+                        description: 'Titanium build with 200MP quad-camera system and OLED display.',
+                        frontImage: 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=500&q=80',
+                        backImage: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=500&q=80',
+                        showBack: false
+                    },
+                    {
+                        id: 2,
+                        name: 'Nexus Prime Fold V',
+                        price: 2000,
+                        dailyEarn: 2000 * 0.11,
+                        cycles: 365,
+                        description: 'Next-generation foldable display with advanced hinge mechanism.',
+                        frontImage: 'https://images.unsplash.com/photo-1565849904461-04a58ad377e0?auto=format&fit=crop&w=500&q=80',
+                        backImage: 'https://images.unsplash.com/photo-1533228876829-61c94e7ef50a?auto=format&fit=crop&w=500&q=80',
+                        showBack: false
+                    },
+                    {
+                        id: 3,
+                        name: 'Titan Obsidian X Pro',
+                        price: 3700,
+                        dailyEarn: 3700 * 0.11,
+                        cycles: 365,
+                        description: 'Ultimate gaming and media powerhouse with ultra-fast neural chip.',
+                        frontImage: 'https://images.unsplash.com/photo-1580910051074-3eb694886505?auto=format&fit=crop&w=500&q=80',
+                        backImage: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=500&q=80',
+                        showBack: false
+                    }
+                ],
+
+                // Admin & Member management records
+                adminMembers: [
+                    { id: 1, emailOrPhone: 'user@nexus.com', balance: 5000, inviteCode: 'NEXGEN8849', purchasedProducts: ['Apex Horizon Ultra 5G'] },
+                    { id: 2, emailOrPhone: '0712345678', balance: 1200, inviteCode: 'NEXGEN3321', purchasedProducts: [] }
+                ],
+                allWithdrawalRequests: [
+                    { id: 1, user: '0712345678', amount: 1500, destination: '0712345678', status: 'Pending Verification' }
+                ],
+                totalPlatformRecharges: 125000,
+                newProd: { name: '', price: '', frontImage: '', backImage: '', description: '' },
+
+                init() {
+                    // Simulate live stream rotation
+                    setInterval(() => {
+                        const tickers = [
+                            'User 0737***409 recharged KES 3,700 successfully',
+                            'User 0789***112 purchased Apex Horizon Ultra 5G',
+                            'User 0718***992 successfully withdrew KES 6,500',
+                            'User 0745***221 recharged KES 2,000 via account 0737047849'
+                        ];
+                        this.liveTickerMessage = tickers[Math.floor(Math.random() * tickers.length)];
+                    }, 5000);
+                },
+
+                handleAuth() {
+                    if(!this.authInput || !this.authPassword) return;
+                    this.isAuthenticated = true;
+                    // Register user in admin list if new
+                    if(!this.adminMembers.some(m => m.emailOrPhone === this.authInput)) {
+                        this.adminMembers.push({
+                            id: this.adminMembers.length + 1,
+                            emailOrPhone: this.authInput,
+                            balance: this.balance,
+                            inviteCode: this.myInvitationCode,
+                            purchasedProducts: []
+                        });
+                    }
+                },
+
+                logout() {
+                    this.isAuthenticated = false;
+                    this.authInput = '';
+                    this.authPassword = '';
+                },
+
+                openAdminLoginModal() {
+                    this.showAdminLoginModal = true;
+                },
+
+                handleAdminLogin() {
+                    if(this.adminEmailInput === this.correctAdminEmail && this.adminPasswordInput === this.correctAdminPassword) {
+                        this.showAdminLoginModal = false;
+                        this.showAdminPortal = true;
+                        this.adminEmailInput = '';
+                        this.adminPasswordInput = '';
+                    } else {
+                        alert('Invalid management credentials. Access denied.');
+                    }
+                },
+
+                submitRecharge() {
+                    if(!this.rechargeAmount || !this.rechargeRef) return;
+                    const amt = this.rechargeAmount;
+                    const ref = this.rechargeRef;
+                    
+                    this.rechargeAmount = '';
+                    this.rechargeRef = '';
+
+                    alert('Recharge initiated to account 0737047849. Reflecting in dashboard in 10 seconds...');
+
+                    // Automatic 10-second reflection timer
+                    setTimeout(() => {
+                        this.balance += amt;
+                        this.totalPlatformRecharges += amt;
+                        this.rechargeHistory.unshift({
+                            id: Date.now(),
+                            amount: amt,
+                            ref: ref,
+                            date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
+                            status: 'Successful'
+                        });
+                        alert('Success! KES ' + amt.toLocaleString() + ' has been credited to your wallet.');
+                    }, 10000);
+                },
+
+                submitWithdraw() {
+                    if(this.withdrawAmount < 600) {
+                        alert('Minimum withdrawal amount is KES 600.');
+                        return;
+                    }
+                    if(this.withdrawAmount > this.balance) {
+                        alert('Insufficient balance for this withdrawal.');
+                        return;
+                    }
+
+                    const amt = this.withdrawAmount;
+                    const dest = this.withdrawDestination;
+
+                    this.balance -= amt;
+                    this.withdrawAmount = '';
+                    this.withdrawDestination = '';
+
+                    const reqObj = {
+                        id: Date.now(),
+                        user: this.authInput || 'Current User',
+                        amount: amt,
+                        destination: dest,
+                        date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
+                        status: 'Pending Verification'
+                    };
+
+                    this.withdrawHistory.unshift(reqObj);
+                    this.allWithdrawalRequests.unshift(reqObj);
+
+                    alert('Withdrawal request submitted successfully. Management is reviewing your request.');
+                },
+
+                purchaseProduct(product) {
+                    if(this.balance < product.price) {
+                        alert('Insufficient wallet balance! Please recharge your account first before purchasing this device.');
+                        this.currentTab = 'recharge';
+                        return;
+                    }
+
+                    const alreadyOwned = this.userInvestments.some(inv => inv.productId === product.id);
+                    if(alreadyOwned) {
+                        alert('You already own an active cycle of this product. You cannot purchase the exact same product twice concurrently until the active cycle finishes.');
+                        return;
+                    }
+
+                    this.balance -= product.price;
+                    this.totalInvested += product.price;
+
+                    const now = new Date();
+                    const investment = {
+                        id: Date.now(),
+                        productId: product.id,
+                        name: product.name,
+                        frontImage: product.frontImage,
+                        price: product.price,
+                        dailyEarn: product.price * 0.11,
+                        daysLeft: 365,
+                        purchaseTimestamp: now.getTime(),
+                        purchaseTimeStr: now.toLocaleDateString() + ' ' + now.toLocaleTimeString(),
+                        canClick: true,
+                        statusText: 'Available Today'
+                    };
+
+                    this.userInvestments.push(investment);
+
+                    const memberRecord = this.adminMembers.find(m => m.emailOrPhone === this.authInput);
+                    if(memberRecord) {
+                        memberRecord.balance = this.balance;
+                        if(!memberRecord.purchasedProducts.includes(product.name)) {
+                            memberRecord.purchasedProducts.push(product.name);
+                        }
+                    }
+
+                    alert('Congratulations! You have successfully purchased ' + product.name + '. Your daily click-to-earn timer is now locked to ' + now.toLocaleTimeString() + '.');
+                    this.currentTab = 'investments';
+                },
+
+                claimDailyEarn(inv) {
+                    if(inv.canClick) {
+                        this.balance += inv.dailyEarn;
+                        this.totalEarnings += inv.dailyEarn;
+                        inv.canClick = false;
+                        inv.statusText = 'Claimed Today (Resets in 24h)';
+                        alert('Successfully claimed daily earnings of KES ' + inv.dailyEarn.toFixed(0) + '!');
+                    } else {
+                        alert('You can only click once per day at or after your purchase timestamp.');
+                    }
+                },
+
+                copyInvitationCode() {
+                    navigator.clipboard.writeText(this.myInvitationCode);
+                    alert('Invitation code copied to clipboard!');
+                },
+
+                // Admin actions
+                approveWithdraw(req) {
+                    req.status = 'Approved';
+                    alert('Withdrawal request approved.');
+                },
+
+                rejectWithdraw(req) {
+                    req.status = 'Rejected';
+                    this.balance += req.amount; // Refund user
+                    alert('Withdrawal request rejected and funds refunded to user.');
+                },
+
+                addNewProduct() {
+                    if(!this.newProd.name || !this.newProd.price) return;
+                    this.products.push({
+                        id: Date.now(),
+                        name: this.newProd.name,
+                        price: Number(this.newProd.price),
+                        dailyEarn: Number(this.newProd.price) * 0.11,
+                        cycles: 365,
+                        description: this.newProd.description || 'Latest flagship smartphone.',
+                        frontImage: this.newProd.frontImage,
+                        backImage: this.newProd.backImage,
+                        showBack: false
+                    });
+                    this.newProd = { name: '', price: '', frontImage: '', backImage: '', description: '' };
+                    alert('New product successfully added to catalog.');
+                },
+
+                get pendingWithdrawalsCount() {
+                    return this.allWithdrawalRequests.filter(r => r.status === 'Pending Verification').length;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
